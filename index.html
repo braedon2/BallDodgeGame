@@ -1,0 +1,25 @@
+<!doctype html>
+
+<meta charset=utf-8>
+<title>Ball Dodge</title>
+
+<style>
+    div {
+        padding: 5px;
+    }
+</style>
+
+<body>
+    <div id="game" style="float: left"></div>
+    <div id="info" style="float: left">
+        <p>Collect the yellow balls then proceed to the red area to win</p>
+        <p>The level restarts when you touch a black ball</p>
+        <p>Use the arrow keys to move</p>
+        <p>each level adds an additional black ball</p>
+        <p id="levelDisplay"></p>
+        <p class="win" style="display: none;">You won ! :)</p>
+        <button class="win" style="display: none;">Next Level</button>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
