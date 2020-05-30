@@ -1,7 +1,7 @@
 
 const NUM_COLLECTIBLES = 3;
 
-const BALL_RADIUS = 12;
+const BALL_RADIUS = 15;
 const BALL_SPEED = 60;
 const BALL_COLOR = "black"
 const COLLECTIBLE_COLOR = "gold"
@@ -360,7 +360,7 @@ class Ball {
             adjustedPositions[0], this.speed, adjustedPositions[1], actor.speed
         );
 
-        return new Ball(adjustPositions[0], newSpeeds[0]);
+        return new Ball(adjustedPositions[0], newSpeeds[0], this.color);
     }
 }
 
