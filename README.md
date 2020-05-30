@@ -1,2 +1,2 @@
 # BallDodgeGame
-check it out [here](braedon2.github.io/BallDodgeGame)
+check it out [here](https://braedon2.github.io/BallDodgeGame/)
