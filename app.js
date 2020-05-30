@@ -1,6 +1,6 @@
 import {runLevel} from "./BallDodge.js";
 
-let numBalls = 13;
+let numBalls = 15;
 
 async function nextLevel() {
     document.getElementById("levelDisplay").innerHTML = "Current level: " + numBalls + " balls"

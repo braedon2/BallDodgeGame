@@ -1,7 +1,7 @@
 
 const NUM_COLLECTIBLES = 3;
 
-const BALL_RADIUS = 15;
+const BALL_RADIUS = 12;
 const BALL_SPEED = 60;
 const BALL_COLOR = "black"
 const COLLECTIBLE_COLOR = "gold"
