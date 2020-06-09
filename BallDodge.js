@@ -159,6 +159,10 @@ class State {
         return this.actors.find(actor => actor.type == actorTypes.PLAYER);
     }
 
+    get nonPlayers() {
+        return this.actors.filter(actor => actor.type != actorTypes.PLAYER);
+    }
+
     isWon() {
         let player = this.player;
         let playerZone = touchesZone(player.pos, player.radius);
@@ -172,10 +176,9 @@ class State {
         let newState = new State(
             this.actors.map(actor => actor.update(time, keys)),
             this.status
-        );
-
-        newState = State.computeNonPlayerCollisions(newState, time);
-        newState = State.computePlayerCollisions(newState);
+        )
+        newState = newState.checkNonPlayers(time);
+        newState = newState.checkPlayer(time, keys);
 
         if (newState.isWon())
             return new State(newState.actors, statuses.WON);
@@ -183,50 +186,41 @@ class State {
             return newState;
     }
 
-    static computeNonPlayerCollisions(state) {
-        let nonPlayers = state.actors.filter(
-            actor => actor.type != actorTypes.PLAYER
-        );
-        let newActors = [];
-
-        // check each non player for a collision. add the original actor
-        // to the new list if no collisoin occured, otherwise add a new
-        // actor representing the updated speed
-        nonPlayers.forEach((actor) => {
+    checkNonPlayers(time) {
+        // update each non player. if a collision with another ball is found, 
+        // a new ball is computed with the post-collision velocity
+        let newActors = this.nonPlayers.map(actor => {
+            //let newActor = actor.update(time);
             let newActor = actor;
-            nonPlayers.forEach((otherActor) => {
-                if (actor == otherActor)
-                    return;
-                if (overlap(actor, otherActor)) {
-                    newActor = actor.nonPlayerCollision(otherActor);
-                    return;
-                }
-            });
-            newActors.push(newActor);
+            let collider = this.nonPlayers.find(a => a != actor && overlap(a, newActor));
+            if (collider)
+                return newActor.nonPlayerCollision(collider);
+            else
+                return newActor;
         });
-        // add the player to the new list of actors
-        newActors.push(state.player);
 
-        return new State(newActors, state.status);
+        return new State(newActors.concat(this.player), this.status);
     }
 
-    static computePlayerCollisions(state) {
-        let newActors = state.actors;
-        let collected = [];
-        let newStatus = state.status;
+    checkPlayer(time, keys) {
+        let newPlayer = this.player;
 
-        state.actors.forEach(actor => {
-            if (overlap(state.player, actor)) {
-                if (actor.type == actorTypes.BALL)
-                    newStatus = statuses.LOST;
-                else if (actor.type == actorTypes.COLLECTIBLE)
-                    collected.push(actor); // flag for removal
-            }
+        // check for collision with ball
+        let loseCondition = this.actors.some(a => {
+            return overlap(newPlayer, a) && a.type == actorTypes.BALL;
+        });
+
+        // check for collisions with collectible balls and remove them
+        let newActors = this.nonPlayers.filter(a => {
+            return !(overlap(newPlayer, a) && a.type == actorTypes.COLLECTIBLE);
         })
-        newActors = newActors.filter(actor => !collected.includes(actor));
-
-        return new State(newActors, newStatus);
+        
+        return new State(
+            newActors.concat(newPlayer),
+            loseCondition ? statuses.LOST : this.status
+        );
     }
+
 
     static random(numBalls) {
         let actors = [];
