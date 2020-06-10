@@ -1,7 +1,7 @@
 
 const NUM_COLLECTIBLES = 3;
 
-const BALL_RADIUS = 12;
+const BALL_RADIUS = 16;
 const BALL_SPEED = 60;
 const BALL_COLOR = "black"
 const COLLECTIBLE_COLOR = "gold"
@@ -173,12 +173,9 @@ class State {
     }
 
     update(time, keys) {
-        let newState = new State(
-            this.actors.map(actor => actor.update(time, keys)),
-            this.status
-        )
-        newState = newState.checkNonPlayers(time);
-        newState = newState.checkPlayer(time, keys);
+
+        let newState = this.updateNonPlayers(time);
+        newState = newState.updatePlayer(time, keys);
 
         if (newState.isWon())
             return new State(newState.actors, statuses.WON);
@@ -186,24 +183,21 @@ class State {
             return newState;
     }
 
-    checkNonPlayers(time) {
-        // update each non player. if a collision with another ball is found, 
-        // a new ball is computed with the post-collision velocity
-        let newActors = this.nonPlayers.map(actor => {
-            //let newActor = actor.update(time);
-            let newActor = actor;
-            let collider = this.nonPlayers.find(a => a != actor && overlap(a, newActor));
-            if (collider)
-                return newActor.nonPlayerCollision(collider);
-            else
-                return newActor;
-        });
+    updateNonPlayers(time) {
+        let newBalls = this.nonPlayers;
+        for (let i = 0; i < newBalls.length; i += 1) {
+            let tmpBall = newBalls[i].update(time);
+            let colliderIndex = newBalls.findIndex(b => b != newBalls[i] && overlap(b, tmpBall));
+            if (colliderIndex != -1)
+                Ball.handleCollision(tmpBall, newBalls[colliderIndex])
+            newBalls[i] = tmpBall;
+        }
 
-        return new State(newActors.concat(this.player), this.status);
+        return new State(newBalls.concat(this.player), this.status);
     }
 
-    checkPlayer(time, keys) {
-        let newPlayer = this.player;
+    updatePlayer(time, keys) {
+        let newPlayer = this.player.update(time, keys);
 
         // check for collision with ball
         let loseCondition = this.actors.some(a => {
@@ -221,13 +215,13 @@ class State {
         );
     }
 
-
     static random(numBalls) {
         let actors = [];
         let width = boundaries.width - (BALL_RADIUS * 2);
         let height = boundaries.height - ((BALL_RADIUS + boundaries.zoneHeight) * 2);
         let xMargin = BALL_RADIUS;
         let yMargin = BALL_RADIUS + boundaries.zoneHeight;
+        let id = 0;
 
         // add random balls and collectibles in the middle zone
         while (actors.length < numBalls + NUM_COLLECTIBLES) {
@@ -240,12 +234,14 @@ class State {
             let ball = new Ball(
                 pos,
                 new Vector(0, BALL_SPEED),
-                actors.length < numBalls ? BALL_COLOR : COLLECTIBLE_COLOR
+                actors.length < numBalls ? BALL_COLOR : COLLECTIBLE_COLOR,
+                id
             );
             if (actors.some(b => overlap(b, ball)))
                 continue;
             ball.speed = ball.speed.rotate(2 * Math.PI * Math.random());
             actors.push(ball);
+            id += 1;
         }
 
         actors.push(new Player(
@@ -314,10 +310,11 @@ class CanvasDisplay {
 }
 
 class Ball {
-    constructor(pos, speed, color) {
+    constructor(pos, speed, color, id) {
         this.pos = pos;
         this.speed = speed;
         this.color = color;
+        this.id = id;
     }
 
     get type() { 
@@ -344,17 +341,20 @@ class Ball {
                 newSpeed = newSpeed.invertY();
         }
 
-        return new Ball(newPos, newSpeed, this.color);
+        return new Ball(newPos, newSpeed, this.color, this.id);
     }
 
-    nonPlayerCollision(actor) {
-        let adjustedPositions = adjustPositions(this, actor);
+    static handleCollision(ball1, ball2) { 
+        [ball1.pos, ball2.pos] = adjustPositions(ball1, ball2);
 
-        let newSpeeds = elasticCollision(
-            adjustedPositions[0], this.speed, adjustedPositions[1], actor.speed
+        [ball1.speed, ball2.speed] = elasticCollision(
+            ball1.pos, ball1.speed, ball2.pos, ball2.speed
         );
 
-        return new Ball(adjustedPositions[0], newSpeeds[0], this.color);
+        // return [
+        //     new Ball(adjustedPositions[0], newSpeeds[0], ball1.color, ball1.id),
+        //     new Ball(adjustedPositions[1], newSpeed[1], ball2.color, ball2.id)
+        // ];
     }
 }
 
@@ -433,9 +433,14 @@ function adjustPositions(ball1, ball2) {
     let step = 0.001;
     let balls = [ball1, ball2];
     let positions = [ball1.pos, ball2.pos];
+    let i = 0;
     
     while (overlapDistance > 0.01) {
-        for (let i = 0; i < 2; i++) {
+        i += 1;
+        if (i > 100) {
+            console.log('sumthins fucked')
+        }
+        for (let i = 0; i < 1; i++) { 
             let newPos = positions[i].plus(balls[i].speed.times(-step))
             if (!touchesBoundary(newPos, balls[i].radius).touches)
                 positions[i] = newPos;
