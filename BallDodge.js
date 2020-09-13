@@ -349,9 +349,15 @@ class Ball {
         ball1.pos = adjustedBall1.pos;
         ball2.pos = adjustedBall2.pos;
 
-        [ball1.speed, ball2.speed] = elasticCollision(
-            adjustedBall1.pos, ball1.speed, adjustedBall2.pos, ball2.speed
-        );
+        // [ball1.speed, ball2.speed] = elasticCollision(
+        //     adjustedBall1.pos, ball1.speed, adjustedBall2.pos, ball2.speed
+        // );
+        let { ball1: newBall1, ball2: newBall2 } = elasticCollision({ 
+            ball1: adjustedBall1, 
+            ball2: adjustedBall2 
+        })
+        ball1.speed = newBall1.speed;
+        ball2.speed = newBall2.speed;
     }
 }
 
@@ -393,7 +399,10 @@ function overlap(actor1, actor2) {
     return false;    
 }
 
-function elasticCollision(pos1, speed1, pos2, speed2) {
+function elasticCollision({ ball1, ball2 }) {
+    let { pos: pos1, speed: speed1 } = ball1;
+    let { pos: pos2, speed: speed2 } = ball2;
+
     let n = pos2.minus(pos1); // normal vector
     let un = n.normalize(); // unit normal
     let ut = new Vector(-un.y, un.x); // unit tangent
@@ -418,11 +427,10 @@ function elasticCollision(pos1, speed1, pos2, speed2) {
     let newSpeed1 = new_v1n.plus(new_v1t);
     let newSpeed2 = new_v2n.plus(new_v2t);
 
-    // modify new speeds to have magnitude of BALL_SPEED
-    return [
-        newSpeed1, 
-        newSpeed2
-    ];
+    return {
+        ball1: new Ball(pos1, newSpeed1),
+        ball2: new Ball(pos2, newSpeed2)
+    }
 }
 
 function adjustPositions({ ball1, ball2 }) {
@@ -450,8 +458,8 @@ function adjustPositions({ ball1, ball2 }) {
     }
     
     return {
-        ball1: new Ball(positions[0]),
-        ball2: new Ball(positions[1])
+        ball1: new Ball(positions[0], ball1.speed, ball1.color),
+        ball2: new Ball(positions[1], ball2.speed, ball2.color)
     }
 }
 
