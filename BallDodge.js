@@ -345,16 +345,13 @@ class Ball {
     }
 
     static handleCollision(ball1, ball2) { 
-        [ball1.pos, ball2.pos] = adjustPositions(ball1, ball2);
+        let { ball1: adjustedBall1, ball2: adjustedBall2} = adjustPositions({ ball1, ball2 });
+        ball1.pos = adjustedBall1.pos;
+        ball2.pos = adjustedBall2.pos;
 
         [ball1.speed, ball2.speed] = elasticCollision(
-            ball1.pos, ball1.speed, ball2.pos, ball2.speed
+            adjustedBall1.pos, ball1.speed, adjustedBall2.pos, ball2.speed
         );
-
-        // return [
-        //     new Ball(adjustedPositions[0], newSpeeds[0], ball1.color, ball1.id),
-        //     new Ball(adjustedPositions[1], newSpeed[1], ball2.color, ball2.id)
-        // ];
     }
 }
 
@@ -428,7 +425,7 @@ function elasticCollision(pos1, speed1, pos2, speed2) {
     ];
 }
 
-function adjustPositions(ball1, ball2) {
+function adjustPositions({ ball1, ball2 }) {
     let overlapDistance = (ball1.radius + ball2.radius) - (ball1.pos.distanceFrom(ball2.pos));
     let step = 0.001;
     let balls = [ball1, ball2];
@@ -440,6 +437,9 @@ function adjustPositions(ball1, ball2) {
         if (i > 100) {
             console.log('sumthins fucked')
         }
+
+        // it makes sense to adjust both balls incrementally but this seems to 
+        // cause problems where the balls "teleport"
         for (let i = 0; i < 1; i++) { 
             let newPos = positions[i].plus(balls[i].speed.times(-step))
             if (!touchesBoundary(newPos, balls[i].radius).touches)
@@ -448,7 +448,11 @@ function adjustPositions(ball1, ball2) {
         overlapDistance = ball1.radius + ball2.radius 
             - (positions[0].distanceFrom(positions[1]));
     }
-    return positions;
+    
+    return {
+        ball1: new Ball(positions[0]),
+        ball2: new Ball(positions[1])
+    }
 }
 
 function runAnimation(frameFunc) {
