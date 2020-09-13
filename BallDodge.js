@@ -186,11 +186,18 @@ class State {
     updateNonPlayers(time) {
         let newBalls = this.nonPlayers;
         for (let i = 0; i < newBalls.length; i += 1) {
-            let tmpBall = newBalls[i].update(time);
-            let colliderIndex = newBalls.findIndex(b => b != newBalls[i] && overlap(b, tmpBall));
-            if (colliderIndex != -1)
-                Ball.handleCollision(tmpBall, newBalls[colliderIndex])
-            newBalls[i] = tmpBall;
+            newBalls[i] = newBalls[i].update(time);
+
+            let colliderIndex = newBalls.findIndex(
+                b => b != newBalls[i] && overlap(b, newBalls[i]));
+
+            if (colliderIndex != -1) {
+                let postCollision = collide({ 
+                    ball1: newBalls[i], ball2: newBalls[colliderIndex]
+                })
+                newBalls[i] = postCollision.ball1;
+                newBalls[colliderIndex] = postCollision.ball2;
+            }
         }
 
         return new State(newBalls.concat(this.player), this.status);
@@ -343,22 +350,6 @@ class Ball {
 
         return new Ball(newPos, newSpeed, this.color, this.id);
     }
-
-    static handleCollision(ball1, ball2) { 
-        let { ball1: adjustedBall1, ball2: adjustedBall2} = adjustPositions({ ball1, ball2 });
-        ball1.pos = adjustedBall1.pos;
-        ball2.pos = adjustedBall2.pos;
-
-        // [ball1.speed, ball2.speed] = elasticCollision(
-        //     adjustedBall1.pos, ball1.speed, adjustedBall2.pos, ball2.speed
-        // );
-        let { ball1: newBall1, ball2: newBall2 } = elasticCollision({ 
-            ball1: adjustedBall1, 
-            ball2: adjustedBall2 
-        })
-        ball1.speed = newBall1.speed;
-        ball2.speed = newBall2.speed;
-    }
 }
 
 Ball.prototype.radius = BALL_RADIUS;
@@ -399,6 +390,15 @@ function overlap(actor1, actor2) {
     return false;    
 }
 
+function collide({ ball1, ball2 }) {
+    let adjustedBalls = adjustPositions({ ball1, ball2 })
+
+    return elasticCollision({ 
+        ball1: adjustedBalls.ball1, 
+        ball2: adjustedBalls.ball2
+    })
+}
+
 function elasticCollision({ ball1, ball2 }) {
     let { pos: pos1, speed: speed1 } = ball1;
     let { pos: pos2, speed: speed2 } = ball2;
@@ -428,8 +428,8 @@ function elasticCollision({ ball1, ball2 }) {
     let newSpeed2 = new_v2n.plus(new_v2t);
 
     return {
-        ball1: new Ball(pos1, newSpeed1),
-        ball2: new Ball(pos2, newSpeed2)
+        ball1: new Ball(pos1, newSpeed1, ball1.color),
+        ball2: new Ball(pos2, newSpeed2, ball2.color)
     }
 }
 
